@@ -1,0 +1,59 @@
+name: 打包並發布 Release
+
+on:
+  push:
+    tags:
+      - 'v*'          # 推送 v1.0、v1.1 之類的 tag 時觸發
+  workflow_dispatch:  # 也可以在 GitHub 網頁上手動觸發
+
+jobs:
+  build:
+    runs-on: windows-latest   # 必須用 Windows 才能打包 Windows .exe
+
+    steps:
+      # 1. 取得程式碼
+      - name: Checkout 程式碼
+        uses: actions/checkout@v4
+
+      # 2. 安裝 Python
+      - name: 安裝 Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # 3. 安裝相依套件
+      - name: 安裝套件
+        run: |
+          pip install pyinstaller pywin32
+
+      # 4. 下載 SumatraPDF（從官方直接抓可攜版）
+      - name: 下載 SumatraPDF
+        run: |
+          curl -L "https://www.sumatrapdfreader.org/dl/rel/3.5.2/SumatraPDF-3.5.2-64.exe" -o SumatraPDF.exe
+
+      # 5. 用 .spec 打包成單一 .exe
+      - name: PyInstaller 打包
+        run: |
+          pyinstaller auto_print_pdf.spec
+
+      # 6. 把 .exe 壓成 .zip（方便使用者下載）
+      - name: 壓縮成 ZIP
+        run: |
+          Compress-Archive -Path "dist\PDF批次列印工具.exe" -DestinationPath "PDF批次列印工具.zip"
+        shell: powershell
+
+      # 7. 發布到 GitHub Releases（自動建立下載頁）
+      - name: 發布 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: PDF批次列印工具.zip
+          name: "PDF 批次列印工具 ${{ github.ref_name }}"
+          body: |
+            ## 使用方式
+            1. 下載下方的 `PDF批次列印工具.zip`
+            2. 解壓縮
+            3. 雙擊 `PDF批次列印工具.exe` 即可使用
+
+            > 僅支援 Windows 10 / 11
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
