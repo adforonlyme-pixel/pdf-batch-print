@@ -39,20 +39,20 @@ jobs:
       # 6. 把 .exe 壓成 .zip（方便使用者下載）
       - name: 壓縮成 ZIP
         run: |
-          Compress-Archive -Path "dist\PDF批次列印工具.exe" -DestinationPath "PDF批次列印工具.zip"
+          Compress-Archive -Path "dist\pdf-batch-print.exe" -DestinationPath "pdf-batch-print.zip"
         shell: powershell
 
       # 7. 發布到 GitHub Releases（自動建立下載頁）
       - name: 發布 Release
         uses: softprops/action-gh-release@v2
         with:
-          files: PDF批次列印工具.zip
-          name: "PDF 批次列印工具 ${{ github.ref_name }}"
+          files: pdf-batch-print.zip
+          name: "PDF Batch Print ${{ github.ref_name }}"
           body: |
             ## 使用方式
-            1. 下載下方的 `PDF批次列印工具.zip`
+            1. 下載下方的 `pdf-batch-print.zip`
             2. 解壓縮
-            3. 雙擊 `PDF批次列印工具.exe` 即可使用
+            3. 雙擊 `pdf-batch-print.exe` 即可使用
 
             > 僅支援 Windows 10 / 11
         env:
