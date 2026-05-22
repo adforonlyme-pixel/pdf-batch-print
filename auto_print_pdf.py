@@ -48,7 +48,7 @@ def build_print_settings(page_mode, custom_pages_str, duplex_mode):
         "duplex_long"  → 長邊雙面
         "duplex_short" → 短邊雙面
 
-    回傳值為字串，例如 "1-3,5,duplexlong"；若無需任何設定則回傳空字串。
+    回傳值為字串，例如 "noscale,1-3,5,duplex"。
     """
     parts = []
 
@@ -58,14 +58,16 @@ def build_print_settings(page_mode, custom_pages_str, duplex_mode):
             parts.append(pages)
 
     duplex_map = {
-        "simplex": "",
-        "duplex_long": "duplexlong",
-        "duplex_short": "duplexshort",
+        "simplex": "simplex",
+        "duplex_long": "duplex",       # SumatraPDF 長邊雙面正確參數
+        "duplex_short": "duplexshort", # SumatraPDF 短邊雙面正確參數
     }
     duplex_param = duplex_map.get(duplex_mode, "")
     if duplex_param:
         parts.append(duplex_param)
 
+    # noscale 確保以原始尺寸列印，避免 SumatraPDF 預設縮放
+    parts.insert(0, "noscale")
     return ",".join(parts)
 
 
