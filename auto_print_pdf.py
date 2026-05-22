@@ -1,6 +1,5 @@
 import os
 import sys
-import glob
 import subprocess
 import tkinter as tk
 from tkinter import messagebox, ttk, filedialog
@@ -22,6 +21,20 @@ def get_printers():
     return [printer[2] for printer in printers]
 
 
+def find_pdf_files(folder):
+    """使用 os.scandir 搜尋資料夾內所有 PDF，正確支援中文檔名"""
+    pdf_files = []
+    try:
+        with os.scandir(folder) as entries:
+            for entry in entries:
+                if entry.is_file() and entry.name.lower().endswith('.pdf'):
+                    pdf_files.append(entry.path)
+    except Exception as e:
+        messagebox.showerror("錯誤", f"讀取資料夾時發生錯誤：\n{e}")
+        return []
+    return sorted(pdf_files)
+
+
 def build_print_settings(page_mode, custom_pages_str, duplex_mode):
     """
     組合 SumatraPDF 的 -print-settings 參數字串。
@@ -39,14 +52,11 @@ def build_print_settings(page_mode, custom_pages_str, duplex_mode):
     """
     parts = []
 
-    # 頁數部分
     if page_mode == "custom":
         pages = custom_pages_str.strip()
         if pages:
             parts.append(pages)
-        # 若使用者留白，等同全部頁數，不加頁數參數
 
-    # 雙面列印部分
     duplex_map = {
         "simplex": "",
         "duplex_long": "duplexlong",
@@ -61,7 +71,7 @@ def build_print_settings(page_mode, custom_pages_str, duplex_mode):
 
 def print_pdfs(printer_name, pdf_folder, page_mode, custom_pages_str, duplex_mode):
     """將資料夾內所有 PDF 逐一發送至 SumatraPDF 進行列印"""
-    pdf_files = sorted(glob.glob(os.path.join(pdf_folder, "*.pdf")))
+    pdf_files = find_pdf_files(pdf_folder)
 
     if not pdf_files:
         messagebox.showinfo("提示", "在所選資料夾內找不到任何 PDF 檔案。")
@@ -101,7 +111,6 @@ def print_pdfs(printer_name, pdf_folder, page_mode, custom_pages_str, duplex_mod
         except Exception as e:
             failed_files.append(f"{os.path.basename(pdf)}（{e}）")
 
-    # 結果報告
     msg = f"已成功發送 {success_count} 個檔案至印表機：\n{printer_name}"
     if print_settings:
         msg += f"\n列印設定：{print_settings}"
@@ -121,7 +130,6 @@ def main():
         root.destroy()
         return
 
-    # ── 主視窗 ──────────────────────────────────────────
     root = tk.Tk()
     root.title("PDF 批次列印工具")
     root.geometry("460x400")
@@ -159,7 +167,8 @@ def main():
     def browse_folder():
         chosen = filedialog.askdirectory(title="選擇 PDF 所在資料夾")
         if chosen:
-            folder_var.set(chosen)
+            # 將路徑統一轉為 Windows 反斜線格式，避免編碼問題
+            folder_var.set(os.path.normpath(chosen))
 
     tk.Button(
         folder_frame, text="瀏覽…", command=browse_folder,
@@ -206,9 +215,9 @@ def main():
     duplex_frame.grid(row=5, column=0, columnspan=2, padx=20, pady=(10, 0), sticky="ew")
 
     duplex_options = [
-        ("單面列印",    "simplex"),
+        ("單面列印",              "simplex"),
         ("雙面－長邊翻頁（常用）", "duplex_long"),
-        ("雙面－短邊翻頁",        "duplex_short"),
+        ("雙面－短邊翻頁",         "duplex_short"),
     ]
     duplex_var = tk.StringVar(value="simplex")
     duplex_cb = ttk.Combobox(
