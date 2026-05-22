@@ -69,12 +69,13 @@ def build_print_settings(page_mode, custom_pages_str, duplex_mode):
     return ",".join(parts)
 
 
-def print_pdfs(printer_name, pdf_folder, page_mode, custom_pages_str, duplex_mode):
+def print_pdfs(root, printer_name, pdf_folder, page_mode, custom_pages_str, duplex_mode):
     """將資料夾內所有 PDF 逐一發送至 SumatraPDF 進行列印"""
     pdf_files = find_pdf_files(pdf_folder)
 
     if not pdf_files:
         messagebox.showinfo("提示", "在所選資料夾內找不到任何 PDF 檔案。")
+        root.destroy()
         return
 
     sumatra_path = get_resource_path("SumatraPDF.exe")
@@ -83,6 +84,7 @@ def print_pdfs(printer_name, pdf_folder, page_mode, custom_pages_str, duplex_mod
             "錯誤",
             "找不到 SumatraPDF.exe！\n請確認程式完整性後重新下載。"
         )
+        root.destroy()
         return
 
     print_settings = build_print_settings(page_mode, custom_pages_str, duplex_mode)
@@ -111,6 +113,7 @@ def print_pdfs(printer_name, pdf_folder, page_mode, custom_pages_str, duplex_mod
         except Exception as e:
             failed_files.append(f"{os.path.basename(pdf)}（{e}）")
 
+    # 列印完成後才銷毀主視窗，確保 messagebox 有父視窗可以顯示
     msg = f"已成功發送 {success_count} 個檔案至印表機：\n{printer_name}"
     if print_settings:
         msg += f"\n列印設定：{print_settings}"
@@ -119,6 +122,8 @@ def print_pdfs(printer_name, pdf_folder, page_mode, custom_pages_str, duplex_mod
         messagebox.showwarning("部分完成", msg)
     else:
         messagebox.showinfo("完成", msg)
+
+    root.destroy()
 
 
 def main():
@@ -167,7 +172,6 @@ def main():
     def browse_folder():
         chosen = filedialog.askdirectory(title="選擇 PDF 所在資料夾")
         if chosen:
-            # 將路徑統一轉為 Windows 反斜線格式，避免編碼問題
             folder_var.set(os.path.normpath(chosen))
 
     tk.Button(
@@ -249,8 +253,10 @@ def main():
             messagebox.showwarning("警告", "請選擇有效的 PDF 資料夾。")
             return
 
-        root.destroy()
+        # 隱藏主視窗（不 destroy），讓 messagebox 仍有父視窗可以顯示
+        root.withdraw()
         print_pdfs(
+            root=root,
             printer_name=selected_printer,
             pdf_folder=pdf_folder,
             page_mode=page_mode_var.get(),
