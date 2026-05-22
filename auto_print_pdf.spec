@@ -30,7 +30,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='PDF批次列印工具',
+    name='pdf-batch-print',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
